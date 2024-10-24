@@ -7,9 +7,10 @@ passport.use(new GoogleStrategy({
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     callbackURL: process.env.GOOGLE_CALLBACK_URL
 }, async (accessToken, refreshToken, profile, done) => {
+    console.log("Google Profile:", profile); 
     try {
         let user = await User.findOne({ googleId: profile.id });
-
+        console.log(user);
         if (!user) {
             user = new User({
                 googleId: profile.id,
