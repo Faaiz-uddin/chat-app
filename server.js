@@ -1,9 +1,10 @@
 const express = require('express');
-// const http = require('http');
-// const socketIo = require('socket.io');
+const http = require('http');
+const socketIO = require('socket.io');
 const connectDB = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
-const messageRoutes = require('./routes/messageRoutes');
+const chatRoutes = require('./routes/chatRoutes');
+const friendRoutes = require('./routes/friendRoutes');
 const session = require('express-session');
 const passport = require('passport');
 const cors = require('cors');
@@ -12,21 +13,25 @@ require('./utils/passport');
 
 
 const app = express();
-
+const server = http.createServer(app);
+const io = socketIO(server);
 connectDB();
 
 app.use(session({ 
     secret: process.env.SESSION_SECRET, 
-}))
+    resave: false,
+    saveUninitialized: true,
+}));
+
 app.use(express.json());
 app.use(cors());
 app.use('/uploads', express.static('uploads'));
-// // Routes
+
 app.use('/api/auth', authRoutes);
-app.use('/api/messages', messageRoutes);
+app.use('/api/chat', chatRoutes);
+app.use('/api/friends', friendRoutes);
 
 
-console.log("Session Secret:", process.env.SESSION_SECRET);
 app.use(
     session({
       secret: process.env.SESSION_SECRET, 
@@ -34,31 +39,22 @@ app.use(
       saveUninitialized: true,
     })
   );
-
-  app.use((req, res, next) => {
-    if (req.session) {
-        console.log("Session middleware is active");
-
-    } else {
-        console.log("Session middleware is NOT active");
-    }
-    next();
-});
-
-
 app.use(passport.initialize());
 app.use(passport.session());
 
 
-
-app.get('/',(req,res) => {
-    res.send('<h1>Faaiz here login</h1>');
+// Socket.IO for Real-Time Communication
+io.on('connection', (socket) => {
+    console.log('New client connected');
+    socket.on('sendMessage', (data) => {
+        io.emit('receiveMessage', data);
+    });
+    socket.on('disconnect', () => {
+        console.log('Client disconnected');
+    });
 });
-app.get("/dashboard", (req, res) => {
- 
-    res.send("Welcome to Dashboard!");
-  });
-// Start the Server
+
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);

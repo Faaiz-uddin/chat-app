@@ -75,7 +75,7 @@ exports.getAllUsers = async (req, res) => {
 exports.updateProfile = async (req, res) => {
     const { username, password } = req.body;
     const profileImage = req.file ? req.file.path : null; 
-    console.log(profileImage);
+    console.log(profileImage,req.body);
     try {
         
         const user = await User.findById(req.user.id);

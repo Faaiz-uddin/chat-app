@@ -6,6 +6,7 @@ const userSchema = new mongoose.Schema({
     googleId: { type: String, unique: true, sparse: true }, 
     name: { type: String },
     email: { type: String, unique: true }, 
+    status: { type: String, default: 'offline' },
     avatar: { type: String },
     profileImage: { type: String }
 }, { timestamps: true });
