@@ -3,9 +3,10 @@
   "version": "1.0.0",
   "description": "Here’s a complete backend setup for a real-time chat application using Express and Socket.IO. This backend will include features like user authentication, real-time messaging, and a simple structure to help you get started.",
   "main": "server.js",
+
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon server.js"
+    "start": "nodemon server"
   },
   "keywords": [],
   "author": "",
