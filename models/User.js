@@ -7,6 +7,7 @@ const userSchema = new mongoose.Schema({
     name: { type: String },
     email: { type: String, unique: true }, 
     status: { type: String, default: 'offline' },
+    lastSeen: { type: Date, default: null }, 
     avatar: { type: String },
     profileImage: { type: String }
 }, { timestamps: true });

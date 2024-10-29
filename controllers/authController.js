@@ -29,7 +29,6 @@ exports.login = async (req, res) => {
         const user = await User.findOne({ email });
         if (!user) return res.status(400).json({ message: 'User not found' });
 
-        
         if (user.googleId) {
             return res.status(400).json({ message: 'Use Google login for this account' });
         }
@@ -37,10 +36,15 @@ exports.login = async (req, res) => {
         const isPasswordCorrect = await bcrypt.compare(password, user.password);
         if (!isPasswordCorrect) return res.status(400).json({ message: 'Invalid credentials' });
 
+        // Set user status to online
+        user.status = 'online';
+        await user.save();
+
         const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
         res.json({ token, user });
     } catch (err) {
+        console.error("Login error:", err);
         res.status(500).json({ error: err.message });
     }
 };
@@ -60,7 +64,7 @@ exports.login = async (req, res) => {
 // };
 exports.getAllUsers = async (req, res) => {
     try {
-        const users = await User.find().select('username email profileImage');
+        const users = await User.find().select('username email profileImage status lastSeen');
         const updatedUsers = users.map(user => ({
             ...user.toObject(),
             profileImage: `${req.protocol}://${req.get('host')}/${user.profileImage}`
@@ -77,29 +81,28 @@ exports.updateProfile = async (req, res) => {
     const profileImage = req.file ? req.file.path : null; 
     console.log(profileImage,req.body);
     try {
-        
         const user = await User.findById(req.user.id);
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
 
-       
+
         if (username) {
             user.username = username;
         }
 
-        
+
         if (password) {
             const hashedPassword = await bcrypt.hash(password, 12);
             user.password = hashedPassword;
         }
 
-       
+
         if (profileImage) {
             user.profileImage = profileImage;
         }
 
-    
+
         await user.save();
 
         res.status(200).json({ message: 'Profile updated successfully', user });
@@ -108,3 +111,13 @@ exports.updateProfile = async (req, res) => {
     }
 };
 
+exports.logout = async (req, res) => {
+    const userId = req.user.id;
+    try {
+        // Update user's status to 'offline' and set last seen time to current date and time
+        await User.findByIdAndUpdate(userId, { status: 'offline', lastSeen: new Date() }, { new: true });
+        res.status(200).json({ message: 'User logged out successfully' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
