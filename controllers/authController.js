@@ -2,7 +2,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 console.log("Faaiz uddin");
-// Register User
+
 exports.register = async (req, res) => {
     const { username, email, password } = req.body;
     console.log(req.body);
@@ -41,6 +41,10 @@ exports.login = async (req, res) => {
         await user.save();
 
         const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+        // Emit online status to all users
+        req.io.emit('statusUpdate', { userId: user._id, status: 'online' });
+        //io.emit('statusUpdate', { userId: user._id, status: 'online' });
 
         res.json({ token, user });
     } catch (err) {
@@ -114,9 +118,13 @@ exports.updateProfile = async (req, res) => {
 exports.logout = async (req, res) => {
     const userId = req.user.id;
     try {
-        // Update user's status to 'offline' and set last seen time to current date and time
+       
         await User.findByIdAndUpdate(userId, { status: 'offline', lastSeen: new Date() }, { new: true });
+
+         // Emit offline status with last seen
+         req.io.emit('statusUpdate', { userId, status: 'offline', lastSeen: new Date() });
         res.status(200).json({ message: 'User logged out successfully' });
+        
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
