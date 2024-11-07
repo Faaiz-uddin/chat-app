@@ -86,20 +86,16 @@ exports.sendMessage = async (req, res) => {
     }
 
     try {
-       
         const success = await sendMessage(req.io, req.user.id, receiverId, message, attachments);
-        if (success) {
-            console.log(`Message successfully sent to receiver ID: ${receiverId}`);
-        } else {
-            console.log(`Message saved for offline delivery to receiver ID: ${receiverId}`);
-        }
-
+        console.log(success ? `Message successfully sent to receiver ID: ${receiverId}` : `Message saved for offline delivery to receiver ID: ${receiverId}`);
+        
         return res.status(201).json({ success: true, message: 'Message processed' });
     } catch (error) {
         console.error("Error processing message request:", error);
         return res.status(500).json({ error: 'Failed to process message.' });
     }
 };
+
 
 //asasa
 // exports.sendMessage = async (req, res) => {

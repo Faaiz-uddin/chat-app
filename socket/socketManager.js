@@ -6,7 +6,7 @@ const connectedUsers = new Set();
 const userStatus = new Map();
 const initializeSocket = (io) => {
     io.on('connection', (socket) => {
-        console.log('A user connected:', socket.id);
+        //console.log('A user connected:', socket.id);
 
 
         socket.on('join', async (userId) => {
@@ -15,8 +15,8 @@ const initializeSocket = (io) => {
                 console.log(`User ${userId} joined. Active connections:`, Array.from(userSockets.entries()));
                 userStatus.set(userId, { status: "online", lastSeen: null });
                 io.emit("statusUpdate", { userId, status: "online" });
-                // Load and send any unread messages to the user
-                await loadUnreadMessages(userId, socket);
+                
+
             } catch (error) {
                 console.error(`Error during join for user ${userId}:`, error);
             }
@@ -46,8 +46,6 @@ const initializeSocket = (io) => {
                 io.to(receiverSocketId).emit("userStopTyping", { senderId });
             }
         });
-
-
 
         socket.on('disconnect', () => {
             console.log('User disconnected:', socket.id);
@@ -136,16 +134,24 @@ const sendMessage = async (io, senderId, receiverId, message, attachments) => {
     };
 
     try {
-        // Save the message to the database
-        const newMessage = await new Message(messageData).save();
+       
+         
+         const newMessage = await new Message(messageData).save();
 
-        // Check if the receiver is online
-        const receiverSocketId = userSockets.get(receiverId);
+         
+         const receiverSocketId = userSockets.get(receiverId);
+ 
+     
+
+
+         
+  
+        
         if (receiverSocketId) {
-            // Send the message in real time
+         
             io.to(receiverSocketId).emit('receiveMessage', newMessage);
 
-            // Update the message status to 'sent'
+            
             newMessage.status = 'sent';
             await newMessage.save();
             console.log(`Message sent to receiver ${receiverId} (online)`);
@@ -159,6 +165,8 @@ const sendMessage = async (io, senderId, receiverId, message, attachments) => {
         return false;
     }
 };
+
+
 
 
 
