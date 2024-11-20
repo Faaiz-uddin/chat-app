@@ -1,9 +1,7 @@
 const Message = require('../models/Message');
-const User = require('../models/User');
 const userSockets = new Map();
 const userStatus = new Map();
 const unreadCounts = new Map();
-const connectedUsers = new Set();
 
 const initializeSocket = (io) => {
     io.on('connection', (socket) => {
@@ -12,93 +10,71 @@ const initializeSocket = (io) => {
             try {
                 userSockets.set(userId, socket.id);
                 userStatus.set(userId, { status: "online", lastSeen: null });
-                if (!unreadCounts.has(userId)) {
-                    unreadCounts.set(userId, {});
-                }
+                unreadCounts.set(userId, {}); // Initialize unread count for user
                 io.emit("statusUpdate", { userId, status: "online" });
-                //console.log(`User ${userId} joined. Active connections:`, Array.from(userSockets.entries()));
+                console.log(`User ${userId} joined. Active connections:`, Array.from(userSockets.entries()));
             } catch (error) {
                 console.error(`Error during join for user ${userId}:`, error);
             }
         });
 
-        // socket.on('join', async (userId) => {
-        //     try {
-        //         console.log(`User joined: userId=${userId}, socketId=${socket.id}`);
-        //         userSockets.set(userId, socket.id);
-        //         console.log(`User ${userId} joined. Active connections:`, Array.from(userSockets.entries()));
-        //         userStatus.set(userId, { status: "online", lastSeen: null });
-        //         io.emit("statusUpdate", { userId, status: "online" });
-                
+      
+        socket.on('sendMessage', async ({ senderId, receiverId, message, attachments }) => {
+            const messageData = {
+                sender: senderId,
+                receiver: receiverId,
+                message,
+                attachments: attachments || [],
+                status: 'unread',
+                timestamp: new Date(),
+            };
 
-        //     } catch (error) {
-        //         console.error(`Error during join for user ${userId}:`, error);
-        //     }
-        // });
+            try {
+                const newMessage = await new Message(messageData).save();
+                const receiverSocketId = userSockets.get(receiverId);
 
-        // socket.on('openChat', ({ userId, chatWith }) => {
-        //     console.log( userId, chatWith);
-        //     const userUnread = unreadCounts.get(userId) || {};
-        //     console.log(userUnread);
-        //     if (userUnread[chatWith]) {
-        //         userUnread[chatWith] = 0;
-        //         unreadCounts.set(userId, userUnread);
-        //         const userSocketId = userSockets.get(userId);
-        //         if (userSocketId) {
-        //             io.to(userSocketId).emit('updateUnreadCount', userUnread);
-        //         }
-        //         console.log(`Unread count reset for user ${userId} with chat ${chatWith}.`);
-        //     }
-        // });
-        socket.on('openChat', async ({ userId, chatWith }) => {
-            console.log("OpenChat Triggered:", { userId, chatWith });
-        
-            // Step 1: Get unread counts for the user
-            const userUnread = unreadCounts.get(userId) || {};
-            console.log("Unread Counts Before Reset:", userUnread);
-        
-            // Step 2: Check if unread messages exist for `chatWith`
-            if (userUnread[chatWith]) {
-                console.log(`Resetting unread count for chat: ${chatWith}`);
-                
-                // Reset unread count for chatWith
-                userUnread[chatWith] = 0;
-                unreadCounts.set(userId, userUnread);
-        
-                // Step 3: Update the message status in the database
-                try {
-                    await Message.updateMany(
-                        { sender: chatWith, receiver: userId, status: 'unread' },
-                        { $set: { status: 'read' } } // Set to 'read'
-                    );
-                    console.log(`Messages from ${chatWith} to ${userId} marked as read.`);
-                } catch (error) {
-                    console.error("Error updating message status:", error);
+             
+                const receiverUnread = unreadCounts.get(receiverId) || {};
+                receiverUnread[senderId] = (receiverUnread[senderId] || 0) + 1;
+                unreadCounts.set(receiverId, receiverUnread);
+
+         
+                if (receiverSocketId) {
+                    io.to(receiverSocketId).emit('receiveMessage', newMessage);
+                    io.to(receiverSocketId).emit('updateUnreadCount', receiverUnread);
+                    console.log(`Message sent to receiver ${receiverId} (online).`);
+                } else {
+                    console.log(`Receiver ${receiverId} is offline. Message saved for later.`);
                 }
-        
-                // Step 4: Emit the updated unread counts to the user
+            } catch (error) {
+                console.error("Error sending message:", error);
+            }
+        });
+
+     
+        socket.on('openChat', ({ userId, chatWith }) => {
+            const userUnread = unreadCounts.get(userId) || {};
+            if (userUnread[chatWith]) {
+                userUnread[chatWith] = 0; 
+                unreadCounts.set(userId, userUnread);
+
+              
                 const userSocketId = userSockets.get(userId);
                 if (userSocketId) {
                     io.to(userSocketId).emit('updateUnreadCount', userUnread);
-                    console.log("Unread count emitted to user:", userId);
-                } else {
-                    console.log("User socket not found for emitting unread counts.");
                 }
-            } else {
-                console.log(`No unread messages for chatWith: ${chatWith}`);
+                console.log(`Unread count reset for user ${userId} with chat ${chatWith}.`);
             }
-        
-            console.log("Unread Counts After Reset:", unreadCounts.get(userId));
         });
 
-
+  
         socket.on('logout', (userId) => {
             if (userSockets.has(userId)) {
                 userSockets.delete(userId);
                 const lastSeen = new Date().toISOString();
                 userStatus.set(userId, { status: "offline", lastSeen });
                 io.emit("statusUpdate", { userId, status: "offline", lastSeen });
-                //console.log(`User ${userId} logged out. Active connections:`, Array.from(userSockets.entries()));
+                console.log(`User ${userId} logged out. Active connections:`, Array.from(userSockets.entries()));
             }
         });
 
@@ -110,7 +86,7 @@ const initializeSocket = (io) => {
                     userSockets.delete(userId);
                     userStatus.set(userId, "offline");
                     io.emit("statusUpdate", { userId, status: "offline" });
-                    //console.log(`User ${userId} disconnected. Active connections:`, Array.from(userSockets.entries()));
+                    console.log(`User ${userId} disconnected. Active connections:`, Array.from(userSockets.entries()));
                     break;
                 }
             }
@@ -147,7 +123,7 @@ const sendMessage = async (io, senderId, receiverId, message, attachments) => {
         const newMessage = await new Message(messageData).save();
         const receiverSocketId = userSockets.get(receiverId);
 
-        // Update unread counts
+       
         const receiverUnread = unreadCounts.get(receiverId) || {};
         receiverUnread[senderId] = (receiverUnread[senderId] || 0) + 1;
         unreadCounts.set(receiverId, receiverUnread);
@@ -174,6 +150,6 @@ module.exports = {
     sendMessage,
 };
 
-/*
+/* 
     
 */

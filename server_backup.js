@@ -1,7 +1,6 @@
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
-const { Server } = require('socket.io');
 const connectDB = require('./config/db');
 const { initializeSocket ,setupSocket} = require('./socket/socketManager');
 const authRoutes = require('./routes/authRoutes');
@@ -15,20 +14,19 @@ require('./utils/passport');
 
 
 const app = express();
-import { createServer } from "http";
-import { Server } from "socket.io";
+const server = http.createServer(app);
 
 connectDB();
-app.use(cors());
-
-const httpServer = createServer();
-const io = new Server(httpServer, {
-  
+const io = require('socket.io')(server, {
+    cors: {
+        origin: '*', // Replace '*' with your frontend URL (e.g., 'http://192.168.100.169:3000')
+        methods: ['GET', 'POST'],
+        allowedHeaders: ['Authorization'],
+        credentials: true
+    },
+    transports: ['websocket', 'polling']
 });
 
-io.on("connection", (socket) => {
-    
-  });
 
 app.use(session({ 
     secret: process.env.SESSION_SECRET, 
@@ -37,7 +35,7 @@ app.use(session({
 }));
 
 app.use(express.json());
-
+app.use(cors());
 
 // Attach Socket.IO to Express requests
 app.use((req, res, next) => {

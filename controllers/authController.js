@@ -36,13 +36,13 @@ exports.login = async (req, res) => {
         const isPasswordCorrect = await bcrypt.compare(password, user.password);
         if (!isPasswordCorrect) return res.status(400).json({ message: 'Invalid credentials' });
 
-        // Set user status to online
+
         user.status = 'online';
         await user.save();
 
         const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
-        // Emit online status to all users
+       
         req.io.emit('statusUpdate', { userId: user._id, status: 'online' });
         //io.emit('statusUpdate', { userId: user._id, status: 'online' });
 
@@ -81,7 +81,7 @@ exports.getAllUsers = async (req, res) => {
 };
 
 exports.updateProfile = async (req, res) => {
-    const { username, password } = req.body;
+    const { username, email } = req.body;
     const profileImage = req.file ? req.file.path : null; 
     console.log(profileImage,req.body);
     try {
@@ -90,22 +90,9 @@ exports.updateProfile = async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
-
-        if (username) {
-            user.username = username;
-        }
-
-
-        if (password) {
-            const hashedPassword = await bcrypt.hash(password, 12);
-            user.password = hashedPassword;
-        }
-
-
-        if (profileImage) {
-            user.profileImage = profileImage;
-        }
-
+        if (username) user.username = username;
+        if (email) user.email = email;
+        if (profileImage) user.profileImage = profileImage;
 
         await user.save();
 
@@ -129,3 +116,9 @@ exports.logout = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
+
+// 24hr 
+
+// Consistecy 
+// Disciplane 
+// Review
