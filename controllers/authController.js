@@ -11,7 +11,6 @@ exports.register = async (req, res) => {
         if (existingUser) {
             return res.status(400).json({ message: 'User already exists' });
         }
-        
         const hashedPassword = await bcrypt.hash(password, 12);
         const newUser = new User({ username, email, password: hashedPassword });
         await newUser.save();
@@ -22,7 +21,7 @@ exports.register = async (req, res) => {
     }
 };
 
-// Login User
+
 exports.login = async (req, res) => {
     const { email, password } = req.body;
     try {
@@ -42,9 +41,9 @@ exports.login = async (req, res) => {
 
         const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
-       
+
         req.io.emit('statusUpdate', { userId: user._id, status: 'online' });
-        //io.emit('statusUpdate', { userId: user._id, status: 'online' });
+      
 
         res.json({ token, user });
     } catch (err) {
@@ -79,6 +78,27 @@ exports.getAllUsers = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+
+exports.getProfile = async (req, res) => {
+    const userId = req.user.id;
+
+    try {
+        const user = await User.findById(userId).select('username email profileImage');
+        if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+        }
+        const profileImageUrl = `${req.protocol}://${req.get('host')}/${user.profileImage}`;
+        res.status(200).json({
+        email: user.email,
+        username: user.username,
+        image: profileImageUrl,
+        });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).json({ error: 'Server Error' });
+    }
+};
+
 
 exports.updateProfile = async (req, res) => {
     const { username, email } = req.body;
@@ -117,8 +137,3 @@ exports.logout = async (req, res) => {
     }
 };
 
-// 24hr 
-
-// Consistecy 
-// Disciplane 
-// Review

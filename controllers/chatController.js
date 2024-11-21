@@ -49,10 +49,11 @@ exports.getConversationsWithUnreadCount = async (req, res) => {
                 };
             }
 
-           
+
             if (String(msg.receiver._id) === String(userId) && msg.status === 'unread') {
                 uniqueConversations[otherUserId].unreadCount += 1;
             }
+            
         });
 
       

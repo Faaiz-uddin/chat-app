@@ -13,10 +13,10 @@ require('dotenv').config();
 require('./utils/passport');
 
 const app = express();
-connectDB();
-app.use(cors());
 
-// Create HTTP server and attach Express
+app.use(cors({origin: '*'}));
+connectDB();
+
 const httpServer = http.createServer(app);
 const io = new Server(httpServer);
 
@@ -34,7 +34,7 @@ app.use(session({
 
 app.use(express.json());
 
-// Attach Socket.IO to Express requests
+
 app.use((req, res, next) => {
     req.io = io;
     next();
