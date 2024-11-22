@@ -1,14 +1,14 @@
 const Message = require('../models/Message');
 const User = require('../models/User');
-const userSockets = new Map(); // Map to store userId and socketId
-const userStatus = new Map(); // Map to manage user online status
-const activeChats = new Map(); // Track active chats of users
+const userSockets = new Map(); 
+const userStatus = new Map(); 
+const activeChats = new Map(); 
 
 const initializeSocket = (io) => {
     io.on('connection', (socket) => {
         console.log('A user connected:', socket.id);
 
-        // Handle user join event
+
         socket.on('join', async (userId) => {
             try {
                 handleUserJoin(socket, userId, io);
@@ -17,7 +17,7 @@ const initializeSocket = (io) => {
             }
         });
 
-        // Handle opening chat between users
+      
         socket.on('openChat', async ({ userId, chatWithUserId }) => {
             try {
                 handleOpenChat(socket, userId, chatWithUserId);
@@ -26,19 +26,19 @@ const initializeSocket = (io) => {
             }
         });
 
-        // Handle user logout
+
         socket.on('logout', (userId) => {
             handleUserLogout(socket, userId, io);
         });
 
-        // Handle disconnect event
+
         socket.on('disconnect', () => {
             handleUserDisconnect(socket, io);
         });
     });
 };
 
-// Function to handle user join
+
 const handleUserJoin = async (socket, userId, io) => {
     userSockets.set(userId, socket.id);
     userStatus.set(userId, { status: "online", lastSeen: null });
@@ -50,7 +50,7 @@ const handleUserJoin = async (socket, userId, io) => {
     await loadUnreadMessages(userId, socket); // Load unread messages for the user
 };
 
-// Function to handle opening chat and updating message status
+
 const handleOpenChat = async (socket, userId, chatWithUserId) => {
     activeChats.set(userId, chatWithUserId);
 
@@ -80,7 +80,7 @@ const handleUserLogout = (socket, userId, io) => {
     }
 };
 
-// Function to handle user disconnect
+
 const handleUserDisconnect = (socket, io) => {
     for (const [userId, socketId] of userSockets.entries()) {
         if (socketId === socket.id) {
@@ -92,7 +92,7 @@ const handleUserDisconnect = (socket, io) => {
     }
 };
 
-// Function to send message and manage message status
+
 const sendMessage = async (io, senderId, receiverId, message, attachments) => {
     const messageData = {
         sender: senderId,
@@ -126,7 +126,7 @@ const sendMessage = async (io, senderId, receiverId, message, attachments) => {
     }
 };
 
-// Function to load unread messages for a user
+
 const loadUnreadMessages = async (userId, socket) => {
     try {
         const unreadMessages = await Message.find({ receiver: userId, status: 'unread' });

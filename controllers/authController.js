@@ -20,51 +20,26 @@ exports.register = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
-
-
 exports.login = async (req, res) => {
     const { email, password } = req.body;
     try {
         const user = await User.findOne({ email });
         if (!user) return res.status(400).json({ message: 'User not found' });
-
         if (user.googleId) {
             return res.status(400).json({ message: 'Use Google login for this account' });
         }
-
         const isPasswordCorrect = await bcrypt.compare(password, user.password);
         if (!isPasswordCorrect) return res.status(400).json({ message: 'Invalid credentials' });
-
-
         user.status = 'online';
         await user.save();
-
         const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-
-
         req.io.emit('statusUpdate', { userId: user._id, status: 'online' });
-      
-
         res.json({ token, user });
     } catch (err) {
         console.error("Login error:", err);
         res.status(500).json({ error: err.message });
     }
 };
-
-
-// Get All Users
-// exports.getAllUsers = async (req, res) => {
-//     console.log("getAllUsers route hit"); // Log when the route is hit
-//     try {
-//         const users = await User.find(); // Use await to fetch users from the database
-//         console.log("Users fetched:", users); // Log the fetched users
-//         res.status(200).json(users); // Send the fetched users as a JSON response
-//     } catch (err) {
-//         console.log("Error in getAllUsers:", err); // Log any errors
-//         res.status(500).json({ error: err.message });
-//     }
-// };
 exports.getAllUsers = async (req, res) => {
     try {
         const users = await User.find().select('username email profileImage status lastSeen');
@@ -78,12 +53,12 @@ exports.getAllUsers = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
-
 exports.getProfile = async (req, res) => {
     const userId = req.user.id;
-
+    console.log("Faaiz----->>",userId);
     try {
         const user = await User.findById(userId).select('username email profileImage');
+
         if (!user) {
         return res.status(404).json({ error: 'User not found' });
         }
@@ -98,8 +73,6 @@ exports.getProfile = async (req, res) => {
         res.status(500).json({ error: 'Server Error' });
     }
 };
-
-
 exports.updateProfile = async (req, res) => {
     const { username, email } = req.body;
     const profileImage = req.file ? req.file.path : null; 
@@ -121,7 +94,6 @@ exports.updateProfile = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
-
 exports.logout = async (req, res) => {
     const userId = req.user.id;
     try {
@@ -136,4 +108,3 @@ exports.logout = async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 };
-

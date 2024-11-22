@@ -53,30 +53,30 @@ const initializeSocket = (io) => {
         socket.on('openChat', async ({ userId, chatWith }) => {
             console.log("OpenChat Triggered:", { userId, chatWith });
         
-            // Step 1: Get unread counts for the user
+           
             const userUnread = unreadCounts.get(userId) || {};
             console.log("Unread Counts Before Reset:", userUnread);
         
-            // Step 2: Check if unread messages exist for `chatWith`
+        
             if (userUnread[chatWith]) {
                 console.log(`Resetting unread count for chat: ${chatWith}`);
                 
-                // Reset unread count for chatWith
+            
                 userUnread[chatWith] = 0;
                 unreadCounts.set(userId, userUnread);
         
-                // Step 3: Update the message status in the database
+             
                 try {
                     await Message.updateMany(
                         { sender: chatWith, receiver: userId, status: 'unread' },
-                        { $set: { status: 'read' } } // Set to 'read'
+                        { $set: { status: 'read' } } 
                     );
                     console.log(`Messages from ${chatWith} to ${userId} marked as read.`);
                 } catch (error) {
                     console.error("Error updating message status:", error);
                 }
         
-                // Step 4: Emit the updated unread counts to the user
+                
                 const userSocketId = userSockets.get(userId);
                 if (userSocketId) {
                     io.to(userSocketId).emit('updateUnreadCount', userUnread);
@@ -91,6 +91,15 @@ const initializeSocket = (io) => {
             console.log("Unread Counts After Reset:", unreadCounts.get(userId));
         });
 
+        socket.on('getUnreadCount', async (userId) => {
+            try {
+                const userUnread = unreadCounts.get(userId) || {};
+                socket.emit('updateUnreadCount', userUnread);
+            } catch (error) {
+                console.error("Error fetching unread count:", error);
+            }
+        });
+
 
         socket.on('logout', (userId) => {
             if (userSockets.has(userId)) {
@@ -103,19 +112,7 @@ const initializeSocket = (io) => {
         });
 
      
-        socket.on('disconnect', () => {
-            console.log('User disconnected:', socket.id);
-            for (const [userId, socketId] of userSockets.entries()) {
-                if (socketId === socket.id) {
-                    userSockets.delete(userId);
-                    userStatus.set(userId, "offline");
-                    io.emit("statusUpdate", { userId, status: "offline" });
-                    //console.log(`User ${userId} disconnected. Active connections:`, Array.from(userSockets.entries()));
-                    break;
-                }
-            }
-        });
-
+       
       
         socket.on("typing", ({ senderId, receiverId }) => {
             const receiverSocketId = userSockets.get(receiverId);
@@ -130,6 +127,39 @@ const initializeSocket = (io) => {
                 io.to(receiverSocketId).emit("userStopTyping", { senderId });
             }
         });
+
+         socket.on('disconnect', () => {
+            console.log('User disconnected:', socket.id);
+            for (const [userId, socketId] of userSockets.entries()) {
+                if (socketId === socket.id) {
+                    userSockets.delete(userId);
+                    userStatus.set(userId, "offline");
+                    io.emit("statusUpdate", { userId, status: "offline" });
+                    console.log(`User ${userId} disconnected. Active connections:`, Array.from(userSockets.entries()));
+                    break;
+                }
+            }
+        });
+
+       
+        // socket.on('disconnect', () => {
+        //     console.log('User disconnected:', socket.id);
+        //     for (const [userId, socketIds] of userSockets.entries()) {
+        //         if (Array.isArray(socketIds) && socketIds.includes(socket.id)) {
+        //             const updatedSocketIds = socketIds.filter(id => id !== socket.id);
+        //             if (updatedSocketIds.length > 0) {
+        //                 userSockets.set(userId, updatedSocketIds);
+        //             } else {
+        //                 userSockets.delete(userId);
+        //                 userStatus.set(userId, { status: "offline", lastSeen: new Date().toISOString() });
+        //                 io.emit("statusUpdate", { userId, status: "offline" });
+        //             }
+        //             console.log(`User ${userId} disconnected. Active connections:`, Array.from(userSockets.entries()));
+        //             break;
+        //         }
+        //     }
+        // });
+
     });
 };
 
@@ -147,7 +177,7 @@ const sendMessage = async (io, senderId, receiverId, message, attachments) => {
         const newMessage = await new Message(messageData).save();
         const receiverSocketId = userSockets.get(receiverId);
 
-        // Update unread counts
+     
         const receiverUnread = unreadCounts.get(receiverId) || {};
         receiverUnread[senderId] = (receiverUnread[senderId] || 0) + 1;
         unreadCounts.set(receiverId, receiverUnread);
@@ -174,6 +204,3 @@ module.exports = {
     sendMessage,
 };
 
-/*
-    
-*/

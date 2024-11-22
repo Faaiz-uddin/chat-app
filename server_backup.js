@@ -19,7 +19,7 @@ const server = http.createServer(app);
 connectDB();
 const io = require('socket.io')(server, {
     cors: {
-        origin: '*', // Replace '*' with your frontend URL (e.g., 'http://192.168.100.169:3000')
+        origin: '*',
         methods: ['GET', 'POST'],
         allowedHeaders: ['Authorization'],
         credentials: true
@@ -37,7 +37,7 @@ app.use(session({
 app.use(express.json());
 app.use(cors());
 
-// Attach Socket.IO to Express requests
+
 app.use((req, res, next) => {
     req.io = io;
     next();

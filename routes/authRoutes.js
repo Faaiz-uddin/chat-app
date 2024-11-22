@@ -32,14 +32,14 @@ router.get(
       if (!req.user) {
         res.status(400).json({ error: "Authentication failed" });
       }
-      // return user details
+  
       console.log("User Authenticated:", req.user);
       res.json({
         success: true,
         message: "Authenticated successfully",
-        user: req.user, // You may want to send only the essential user data or a token
+        user: req.user,
       });
-    // res.redirect("/dashboard");
+   
     }
   );
 
