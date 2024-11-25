@@ -39,7 +39,7 @@ exports.getConversationsWithUnreadCount = async (req, res) => {
 
             const otherUserId = msg.sender._id.equals(userId) ? msg.receiver._id : msg.sender._id;
 
-            
+
             if (!uniqueConversations[otherUserId]) {
                 uniqueConversations[otherUserId] = {
                     user: msg.sender._id.equals(userId) ? msg.receiver : msg.sender,
@@ -52,10 +52,10 @@ exports.getConversationsWithUnreadCount = async (req, res) => {
             if (String(msg.receiver._id) === String(userId) && msg.status === 'unread') {
                 uniqueConversations[otherUserId].unreadCount += 1;
             }
-            
+
         });
 
-      
+
         const conversationsArray = Object.values(uniqueConversations).map(convo => ({
             user: {
                 _id: convo.user._id,

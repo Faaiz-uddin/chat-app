@@ -9,7 +9,15 @@ const userSchema = new mongoose.Schema({
     status: { type: String, default: 'offline' },
     lastSeen: { type: Date, default: null }, 
     avatar: { type: String },
-    profileImage: { type: String }
+    profileImage: { type: String },
+    resetOtp: {
+        type: Number,
+        required: false,
+    },
+    otpExpiry: {
+        type: Date,
+        required: false,
+    },
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', userSchema);

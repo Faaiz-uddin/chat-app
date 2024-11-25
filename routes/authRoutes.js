@@ -4,7 +4,7 @@ const passport = require('passport');
 const auth = require('../middleware/authMiddleware.js');
 const upload = require('../middleware/upload');
 const router = express.Router();
-const { register,login,getAllUsers,updateProfile ,logout,getProfile} = require('../controllers/authController');
+const { register,login,getAllUsers,updateProfile ,logout,getProfile,forgetPassword,verifyOtp,resetPassword} = require('../controllers/authController');
 
 
 router.post('/register', register);
@@ -14,6 +14,9 @@ router.get('/profile',auth, getProfile);
 router.post('/logout',auth, logout);
 router.put('/update', auth, upload.single('profileImage'), updateProfile);
 router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+router.post('/forget-password', forgetPassword);
+router.post('/verify-otp', verifyOtp);
+router.post('/reset-password', resetPassword);
 // router.get('/google/callback',
 //     passport.authenticate('google', { failureRedirect: '/' }),
 //     (req, res) => {

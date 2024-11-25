@@ -21,7 +21,6 @@ const initializeSocket = (io) => {
                 console.error(`Error during join for user ${userId}:`, error);
             }
         });
-
         // socket.on('join', async (userId) => {
         //     try {
         //         console.log(`User joined: userId=${userId}, socketId=${socket.id}`);
@@ -90,7 +89,6 @@ const initializeSocket = (io) => {
         
             console.log("Unread Counts After Reset:", unreadCounts.get(userId));
         });
-
         socket.on('getUnreadCount', async (userId) => {
             try {
                 const userUnread = unreadCounts.get(userId) || {};
@@ -99,8 +97,6 @@ const initializeSocket = (io) => {
                 console.error("Error fetching unread count:", error);
             }
         });
-
-
         socket.on('logout', (userId) => {
             if (userSockets.has(userId)) {
                 userSockets.delete(userId);
@@ -110,25 +106,19 @@ const initializeSocket = (io) => {
                 //console.log(`User ${userId} logged out. Active connections:`, Array.from(userSockets.entries()));
             }
         });
-
-     
-       
-      
         socket.on("typing", ({ senderId, receiverId }) => {
             const receiverSocketId = userSockets.get(receiverId);
             if (receiverSocketId) {
                 io.to(receiverSocketId).emit("userTyping", { senderId });
             }
         });
-
         socket.on("stopTyping", ({ senderId, receiverId }) => {
             const receiverSocketId = userSockets.get(receiverId);
             if (receiverSocketId) {
                 io.to(receiverSocketId).emit("userStopTyping", { senderId });
             }
         });
-
-         socket.on('disconnect', () => {
+        socket.on('disconnect', () => {
             console.log('User disconnected:', socket.id);
             for (const [userId, socketId] of userSockets.entries()) {
                 if (socketId === socket.id) {
